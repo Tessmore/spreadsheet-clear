@@ -1,18 +1,15 @@
-import CopyButton from "./components/CopyButton";
+import Dropzone from "./components/Dropzone";
 
 function App() {
-    return (
-        <div className="min-h-screen">
-            <div className="container mx-auto px-4 py-16">
-                <header className="text-center">
-                    <div className="space-y-4">
-                        <h1 className="text-5xl font-bold">spreadsheet-clear</h1>
-                        <p className="text-xl">Get started</p>
+    const handleFileSelect = (file: File, contents: string) => {
+        console.log("Selected file:", file.name);
+        console.log("File contents:", contents);
+    };
 
-                        <CopyButton value="Copy text" label="Copy to clipboard" />
-                    </div>
-                </header>
-            </div>
+    return (
+        <div className="p-2">
+            <h1 className="text-xl font-bold mb-4">Spreadsheet clear</h1>
+            <Dropzone onFileSelect={handleFileSelect} />
         </div>
     );
 }
