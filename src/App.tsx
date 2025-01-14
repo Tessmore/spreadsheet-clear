@@ -6,7 +6,7 @@ function App() {
             <div className="container mx-auto px-4 py-16">
                 <header className="text-center">
                     <div className="space-y-4">
-                        <h1 className="text-5xl font-bold">PLACEHOLDER_TITLE</h1>
+                        <h1 className="text-5xl font-bold">spreadsheet-clear</h1>
                         <p className="text-xl">Get started</p>
 
                         <CopyButton value="Copy text" label="Copy to clipboard" />

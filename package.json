@@ -1,7 +1,7 @@
 {
-  "name": "PLACEHOLDER_TITLE",
-  "author": "PLACEHOLDER_AUTHOR",
-  "homepage": "http://tessmore.github.io/react-ts-minimal-template",
+  "name": "spreadsheet-clear",
+  "author": "F.Tesselaar",
+  "homepage": "http://tessmore.github.io/spreadsheet-clear",
   "private": true,
   "type": "module",
   "version": "0.1.0",
