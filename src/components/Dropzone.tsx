@@ -1,10 +1,11 @@
 import { useState, DragEvent, useRef } from "react";
-import { DELIMITERS, transformValue } from "./dropzone-utils";
+import { DELIMITERS, transformValue, transformValueExcel } from "./dropzone-utils";
 import Papa from "papaparse";
 import ExcelJS from "exceljs";
 
 export interface ParseResult {
     data: string[][];
+    processedFile: Blob;
 }
 
 export interface DropzoneProps {
@@ -31,23 +32,45 @@ const Dropzone: React.FC<DropzoneProps> = ({ onFileSelect }) => {
                     const rowValues: string[] = [];
 
                     row.eachCell((cell, colNumber) => {
-                        rowValues.push(transformValue(cell.value as any));
+                        // Add transformed value for preview
+                        const cleanedValue = transformValue(cell.value as any);
+                        rowValues.push(cleanedValue);
+
+                        // Update the cell with cleaned value
+                        cell.value = transformValueExcel(cell.value as any);
                     });
 
                     data.push(rowValues);
                 });
 
-                onFileSelect(file, { data });
+                // Generate processed Excel file
+                const processedFile = await workbook.xlsx.writeBuffer();
+                const blob = new Blob([processedFile], {
+                    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                });
+
+                onFileSelect(file, { data, processedFile: blob });
             } else {
+                const cleanedData: string[][] = [];
+
                 // Config options
                 // https://www.papaparse.com/docs#config
-                Papa.parse(file, {
-                    quotes: true,
+                Papa.parse(file as any, {
                     skipEmptyLines: true,
                     delimitersToGuess: DELIMITERS,
                     transform: (value: any) => transformValue(value),
-                    complete: (results: ParseResult) => {
-                        onFileSelect(file, results);
+                    step: (results: any) => {
+                        cleanedData.push(results.data);
+                    },
+                    complete: () => {
+                        // Generate processed CSV file
+                        const processedCsv = Papa.unparse(cleanedData);
+                        const blob = new Blob([processedCsv], { type: "text/csv" });
+
+                        onFileSelect(file, {
+                            data: cleanedData,
+                            processedFile: blob,
+                        });
                     },
                 });
             }
@@ -86,7 +109,7 @@ const Dropzone: React.FC<DropzoneProps> = ({ onFileSelect }) => {
     const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
 
-        if (files && files[0]) {
+        if (files?.[0]) {
             const selectedFile = files[0];
             setFile(selectedFile);
             readFileContents(selectedFile);
@@ -99,6 +122,13 @@ const Dropzone: React.FC<DropzoneProps> = ({ onFileSelect }) => {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    handleClick();
+                }
+            }}
             className={`
                 bg-gray-50
                 border-2 border-dashed rounded-lg p-12 mt-8
