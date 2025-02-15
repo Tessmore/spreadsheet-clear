@@ -12,7 +12,7 @@ export interface DropzoneProps {
     onFileSelect: (file: File, contents: ParseResult) => void;
 }
 
-const Dropzone: React.FC<DropzoneProps> = ({ onFileSelect }) => {
+const Dropzone = ({ onFileSelect }: DropzoneProps) => {
     const [isDragging, setIsDragging] = useState(false);
     const [file, setFile] = useState<File | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -28,16 +28,15 @@ const Dropzone: React.FC<DropzoneProps> = ({ onFileSelect }) => {
                 const worksheet = workbook.worksheets[0];
                 const data: string[][] = [];
 
-                worksheet.eachRow((row, rowNumber) => {
+                worksheet.eachRow((row) => {
                     const rowValues: string[] = [];
 
-                    row.eachCell((cell, colNumber) => {
+                    row.eachCell((cell) => {
                         // Add transformed value for preview
-                        const cleanedValue = transformValue(cell.value as any);
-                        rowValues.push(cleanedValue);
+                        rowValues.push(transformValue(cell.value) as string);
 
                         // Update the cell with cleaned value
-                        cell.value = transformValueExcel(cell.value as any);
+                        cell.value = transformValueExcel(cell.value);
                     });
 
                     data.push(rowValues);
@@ -55,12 +54,12 @@ const Dropzone: React.FC<DropzoneProps> = ({ onFileSelect }) => {
 
                 // Config options
                 // https://www.papaparse.com/docs#config
-                Papa.parse(file as any, {
+                Papa.parse(file, {
                     skipEmptyLines: true,
                     delimitersToGuess: DELIMITERS,
-                    transform: (value: any) => transformValue(value),
-                    step: (results: any) => {
-                        cleanedData.push(results.data);
+                    transform: (value) => transformValue(value),
+                    step: (results) => {
+                        cleanedData.push(results.data as string[]);
                     },
                     complete: () => {
                         // Generate processed CSV file

@@ -9,7 +9,7 @@ interface TabsProps {
     tabs: Tab[];
 }
 
-export const Tabs: React.FC<TabsProps> = ({ tabs }) => {
+export const Tabs = ({ tabs }: TabsProps) => {
     const [activeTab, setActiveTab] = useState(0);
 
     return (
