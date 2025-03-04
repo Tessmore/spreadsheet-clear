@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Dropzone, { ParseResult } from "./components/Dropzone";
+import Footer from "./components/Footer";
 import { markdownTable } from "markdown-table";
 import { Tabs } from "./components/Tabs";
 import { DownloadIcon, XIcon } from "./components/Icons";
@@ -30,6 +31,7 @@ function App() {
             const url = URL.createObjectURL(processedFile);
             const a = document.createElement("a");
             a.href = url;
+
             // Preserve the original file extension
             const extension = fileName.split(".").pop();
             a.download = `cleaned_${fileName.replace(`.${extension}`, "")}.${extension}`;
@@ -86,10 +88,10 @@ function App() {
     };
 
     return (
-        <div className="flex flex-col gap-2 p-4">
+        <div className="mx-auto p-8">
+            <h1 className="text-2xl font-bold">Spreadsheet Clear</h1>
             <div className="flex justify-between items-center">
                 <div className="flex flex-col gap-2 mb-6">
-                    <h1 className="text-xl font-bold">Spreadsheet clear</h1>
                     <p className="hidden sm:block">
                         Upload an Excel or CSV file and each column will be cleaned up. It locally removes trailing
                         spaces and replaces multiple spaces to a single one.
@@ -118,6 +120,8 @@ function App() {
             </div>
 
             {fileContents ? renderContent() : <Dropzone onFileSelect={handleFileSelect} />}
+
+            <Footer />
         </div>
     );
 }
