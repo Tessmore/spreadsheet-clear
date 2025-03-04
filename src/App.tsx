@@ -102,7 +102,7 @@ function App() {
                     <div className="flex gap-8">
                         <button
                             onClick={handleClear}
-                            className="px-4 py-2 text-black rounded bg-gray-50 border hover:bg-gray-100 transition-colors inline-flex items-center gap-2"
+                            className="px-4 py-2 text-black rounded-sm bg-gray-50 border hover:bg-gray-100 transition-colors inline-flex items-center gap-2"
                         >
                             <XIcon />
                             <span className="hidden sm:block">Choose different file</span>
@@ -110,7 +110,7 @@ function App() {
 
                         <button
                             onClick={handleDownload}
-                            className="px-4 py-2 bg-blue-500 text-white rounded border-blue-800 hover:bg-blue-600 transition-colors inline-flex items-center gap-2"
+                            className="px-4 py-2 bg-blue-500 text-white rounded-sm border-blue-800 hover:bg-blue-600 transition-colors inline-flex items-center gap-2"
                         >
                             <DownloadIcon />
                             <span className="hidden sm:block">Download cleaned file</span>
