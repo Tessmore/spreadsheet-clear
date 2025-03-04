@@ -1,7 +1,7 @@
 import { useState, DragEvent, useRef } from "react";
 import { DELIMITERS, transformValue, transformValueExcel } from "./dropzone-utils";
 import Papa from "papaparse";
-import ExcelJS from "exceljs";
+import * as XLSX from "xlsx";
 
 export interface ParseResult {
     data: string[][];
@@ -17,43 +17,62 @@ const Dropzone = ({ onFileSelect }: DropzoneProps) => {
     const [file, setFile] = useState<File | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const readFileContents = async (file: File) => {
+    const readFileContents = async (file?: File) => {
         try {
-            if (file.name.endsWith(".xlsx")) {
-                const workbook = new ExcelJS.Workbook();
+            if (file?.name.endsWith(".xlsx")) {
                 const arrayBuffer = await file.arrayBuffer();
 
-                await workbook.xlsx.load(arrayBuffer);
+                // NOTE: Uses SheetJS which handles Protected View files
+                const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
 
-                const worksheet = workbook.worksheets[0];
-                const data: string[][] = [];
+                const wsname = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[wsname];
 
-                worksheet.eachRow((row) => {
-                    const rowValues: string[] = [];
+                // Preserve the date formats from the original worksheet
+                const cellFormat = {};
+                for (const cell in worksheet) {
+                    if (cell[0] === "!" || !worksheet[cell].w) {
+                        continue;
+                    }
 
-                    row.eachCell((cell) => {
-                        // Add transformed value for preview
-                        rowValues.push(transformValue(cell.value) as string);
+                    // Store format string if exists
+                    (cellFormat as any)[cell] = worksheet[cell].z;
+                }
 
-                        // Update the cell with cleaned value
-                        cell.value = transformValueExcel(cell.value);
-                    });
+                // Convert to JSON with date detection
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+                    header: 1,
+                    raw: false,
+                    dateNF: "YYYY-MM-DD",
+                }) as any[][];
 
-                    data.push(rowValues);
-                });
+                const data: string[][] = jsonData.map((row) =>
+                    Array.isArray(row) ? row.map((cell) => transformValueExcel(cell)) : [],
+                );
+
+                // Write to a new workbook to get clean data (and avoid protected view issues)
+                const newWorkbook = XLSX.utils.book_new();
+                const newWorksheet = XLSX.utils.aoa_to_sheet(data);
+
+                // Apply the original formats to the new worksheet
+                for (const cell in cellFormat) {
+                    if (newWorksheet[cell]) {
+                        newWorksheet[cell].z = (cellFormat as any)[cell];
+                    }
+                }
+
+                XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, "Sheet1");
 
                 // Generate processed Excel file
-                const processedFile = await workbook.xlsx.writeBuffer();
-                const blob = new Blob([processedFile], {
+                const processedBuffer = XLSX.write(newWorkbook, { type: "array", bookType: "xlsx" });
+                const blob = new Blob([processedBuffer], {
                     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 });
 
                 onFileSelect(file, { data, processedFile: blob });
-            } else {
+            } else if (file) {
                 const cleanedData: string[][] = [];
 
-                // Config options
-                // https://www.papaparse.com/docs#config
                 Papa.parse(file, {
                     skipEmptyLines: true,
                     delimitersToGuess: DELIMITERS,
@@ -62,7 +81,6 @@ const Dropzone = ({ onFileSelect }: DropzoneProps) => {
                         cleanedData.push(results.data as string[]);
                     },
                     complete: () => {
-                        // Generate processed CSV file
                         const processedCsv = Papa.unparse(cleanedData);
                         const blob = new Blob([processedCsv], { type: "text/csv" });
 
@@ -74,7 +92,10 @@ const Dropzone = ({ onFileSelect }: DropzoneProps) => {
                 });
             }
         } catch (error) {
+            console.error("Error reading file:", error);
+
             alert(`Error reading file ${error}`);
+            setFile(null);
         }
     };
 
