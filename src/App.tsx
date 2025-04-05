@@ -3,7 +3,7 @@ import Dropzone, { ParseResult } from "./components/Dropzone";
 import Footer from "./components/Footer";
 import { markdownTable } from "markdown-table";
 import { Tabs } from "./components/Tabs";
-import { DownloadIcon, XIcon } from "./components/Icons";
+import { DownloadIcon } from "./components/Icons";
 
 function App() {
     const [fileName, setFileName] = useState<string>("");
@@ -12,7 +12,7 @@ function App() {
     const [processedFile, setProcessedFile] = useState<Blob | null>(null);
 
     const handleFileSelect = (file: File, contents: ParseResult) => {
-        const data = contents?.data || [];
+        const data: any = contents?.data || [];
 
         setFileName(file.name);
         setFileContents(data.slice(0, 10).join("\n") || "");
@@ -91,7 +91,7 @@ function App() {
         <div className="mx-auto p-8">
             <h1 className="text-2xl font-bold">Spreadsheet Clear</h1>
             <div className="flex justify-between items-center">
-                <div className="flex flex-col gap-2 mb-6">
+                <div className="flex flex-col gap-2">
                     <p className="hidden sm:block">
                         Upload an Excel or CSV file and each column will be cleaned up. It locally removes trailing
                         spaces and replaces multiple spaces to a single one.
@@ -102,18 +102,17 @@ function App() {
                     <div className="flex gap-8">
                         <button
                             onClick={handleClear}
-                            className="px-4 py-2 text-black rounded-sm bg-gray-50 border hover:bg-gray-100 transition-colors inline-flex items-center gap-2"
+                            className="px-4 py-2 text-black cursor-pointer rounded-sm bg-gray-50 border hover:bg-gray-100 transition-colors inline-flex items-center gap-2"
                         >
-                            <XIcon />
-                            <span className="hidden sm:block">Choose different file</span>
+                            <span className="hidden sm:block">Pick another file</span>
                         </button>
 
                         <button
                             onClick={handleDownload}
-                            className="px-4 py-2 bg-blue-500 text-white rounded-sm border-blue-800 hover:bg-blue-600 transition-colors inline-flex items-center gap-2"
+                            className="px-4 py-2 bg-blue-500 cursor-pointer text-white rounded-sm border-blue-800 hover:bg-blue-600 transition-colors inline-flex items-center gap-2"
                         >
                             <DownloadIcon />
-                            <span className="hidden sm:block">Download cleaned file</span>
+                            <span className="hidden sm:block">Download file</span>
                         </button>
                     </div>
                 )}

@@ -1,9 +1,48 @@
 export const DELIMITERS = [",", ";", "\t", "¦"];
 
+// Excel date starts from 1900-01-01, minus 1 because Excel considers 1900 as leap year
+const EXCEL_DATE_OFFSET = 25569;
+const MILLISECONDS_IN_DAY = 24 * 60 * 60 * 1000;
+
+/** Format a date as DD-MM-YYYY */
+export const formatDate = (date: Date): string => {
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+};
+
+/** Convert Excel serial number to JS Date */
+const excelSerialToDate = (serial: number): Date => {
+    // Adjust for Excel's date system and convert to milliseconds
+    const utcDays = serial - EXCEL_DATE_OFFSET;
+    const utcValue = utcDays * MILLISECONDS_IN_DAY;
+    const date = new Date(utcValue);
+    return date;
+};
+
+/** Convert JS Date to Excel serial number */
+export const dateToExcelSerial = (date: Date): number => {
+    const timestamp = date.getTime();
+    const utcDays = timestamp / MILLISECONDS_IN_DAY;
+    return Math.round((utcDays + EXCEL_DATE_OFFSET) * 1000000) / 1000000;
+};
+
+/** Check if a number could be an Excel date serial */
+const isExcelDateSerial = (num: number): boolean => {
+    // Excel dates are always positive and typically > 25569 (1900-01-01)
+    // We'll consider numbers up to year 2100 as potential dates
+    return (
+        num > EXCEL_DATE_OFFSET &&
+        num < 73050 && // 73050 is roughly year 2100
+        Number.isFinite(num)
+    );
+};
+
 export const transformValue = <T>(value: T): T => {
     // Handle Excel Date objects
     if (value instanceof Date) {
-        return value.toISOString().split("T")[0] as T;
+        return formatDate(value) as T;
     }
 
     if (typeof value === "string") {
@@ -21,8 +60,18 @@ export const transformValue = <T>(value: T): T => {
     return value;
 };
 
-/** Only edits string columns */
+/** Handles string cleaning and Excel date conversion */
 export const transformValueExcel = <T>(value: T): T => {
+    // Preserve Date objects
+    if (value instanceof Date) {
+        return value;
+    }
+
+    // Handle Excel serial dates
+    if (typeof value === "number" && isExcelDateSerial(value)) {
+        return excelSerialToDate(value) as T;
+    }
+
     if (typeof value === "string") {
         const trimmed = value.trim();
 
