@@ -3,7 +3,7 @@ import Dropzone, { ParseResult } from "./components/Dropzone";
 import Footer from "./components/Footer";
 import { markdownTable } from "markdown-table";
 import { Tabs } from "./components/Tabs";
-import { DownloadIcon, XIcon } from "./components/Icons";
+import { DownloadIcon } from "./components/Icons";
 
 function App() {
     const [fileName, setFileName] = useState<string>("");
@@ -12,7 +12,7 @@ function App() {
     const [processedFile, setProcessedFile] = useState<Blob | null>(null);
 
     const handleFileSelect = (file: File, contents: ParseResult) => {
-        const data = contents?.data || [];
+        const data: any = contents?.data || [];
 
         setFileName(file.name);
         setFileContents(data.slice(0, 10).join("\n") || "");

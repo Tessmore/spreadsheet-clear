@@ -1,10 +1,10 @@
 import { useState, DragEvent, useRef } from "react";
-import { DELIMITERS, transformValue, transformValueExcel } from "./dropzone-utils";
+import { DELIMITERS, transformValue, transformValueExcel, dateToExcelSerial, formatDate } from "./dropzone-utils";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 
 export interface ParseResult {
-    data: string[][];
+    data: (string | Date | number)[][];
     processedFile: Blob;
 }
 
@@ -23,7 +23,7 @@ const Dropzone = ({ onFileSelect }: DropzoneProps) => {
                 const arrayBuffer = await file.arrayBuffer();
 
                 // NOTE: Uses SheetJS which handles Protected View files
-                const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
+                const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array", cellDates: true });
 
                 const wsname = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[wsname];
@@ -43,21 +43,39 @@ const Dropzone = ({ onFileSelect }: DropzoneProps) => {
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, {
                     header: 1,
                     raw: false,
-                    dateNF: "YYYY-MM-DD",
+                    dateNF: "dd-mm-yyyy", // Use consistent date format
                 }) as any[][];
 
-                const data: string[][] = jsonData.map((row) =>
+                const data: (string | Date | number)[][] = jsonData.map((row) =>
                     Array.isArray(row) ? row.map((cell) => transformValueExcel(cell)) : [],
+                );
+
+                // For preview, convert dates to formatted strings
+                const previewData = data.map((row) =>
+                    row.map((cell) => (cell instanceof Date ? formatDate(cell) : cell)),
                 );
 
                 // Write to a new workbook to get clean data (and avoid protected view issues)
                 const newWorkbook = XLSX.utils.book_new();
-                const newWorksheet = XLSX.utils.aoa_to_sheet(data);
+
+                // Convert dates back to Excel serial numbers for the worksheet
+                const worksheetData = data.map((row) =>
+                    row.map((cell) => (cell instanceof Date ? dateToExcelSerial(cell) : cell)),
+                );
+
+                const newWorksheet = XLSX.utils.aoa_to_sheet(worksheetData);
 
                 // Apply the original formats to the new worksheet
                 for (const cell in cellFormat) {
                     if (newWorksheet[cell]) {
-                        newWorksheet[cell].z = (cellFormat as any)[cell];
+                        const format = (cellFormat as any)[cell];
+                        newWorksheet[cell].z = format;
+
+                        // If this was originally a date column, ensure proper formatting
+                        if (format?.toLowerCase().includes("yy") || format?.toLowerCase().includes("dd")) {
+                            newWorksheet[cell].t = "n"; // Numeric type for Excel dates
+                            newWorksheet[cell].z = "dd-mm-yyyy"; // Consistent date format
+                        }
                     }
                 }
 
@@ -69,7 +87,7 @@ const Dropzone = ({ onFileSelect }: DropzoneProps) => {
                     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 });
 
-                onFileSelect(file, { data, processedFile: blob });
+                onFileSelect(file, { data: previewData, processedFile: blob });
             } else if (file) {
                 const cleanedData: string[][] = [];
 
